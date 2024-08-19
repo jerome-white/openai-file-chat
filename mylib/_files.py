@@ -59,7 +59,6 @@ class VectorStoreManager:
         while True:
             vs_files = self.client.beta.vector_stores.files.list(
                 vector_store_id=self.vector_store_id,
-                **kwargs,
             )
             for f in vs_files.data:
                 yield f.id

@@ -54,10 +54,14 @@ if __name__ == '__main__':
     name = config['assistant_name']
     client = OpenAI(api_key=config['api_key'])
 
+    remove = []
     for a in assistants(client, acheck, name):
         if a.tool_resources.file_search is not None:
             for i in a.tool_resources.file_search.vector_store_ids:
                 Logger.info(f'{a.id} {i}')
-                vsm = VectorStoreManager(i)
+                vsm = VectorStoreManager(client, i)
                 vsm.cleanup()
-        client.beta.assistants.delete(a.id)
+        remove.append(a.id)
+
+    for a in remove:
+        client.beta.assistants.delete(a)
