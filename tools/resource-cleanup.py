@@ -1,5 +1,7 @@
 import time
-from argparse imAAport ArgumentParser
+import json
+from pathlib import Path
+from argparse import ArgumentParser
 
 from scipy import constants
 from openai import OpenAI
@@ -26,28 +28,36 @@ class HourAgeCheck(AgeCheck):
         age = (other - self.now) * constants.hour
         return age < self.limit
 
+def assistants(client, age_limit, name):
+    while True:
+        page = client.beta.assistants.list()
+        for a in page:
+            if a.name == name and a.created_at not in age_limit:
+                yield a
+
+        if not page.has_more:
+            break
+
 if __name__ == '__main__':
     arguments = ArgumentParser()
+    arguments.add_argument('--config', type=Path)
     arguments.add_argument('--max-age-hours', type=int)
     args = arguments.parse_args()
 
-    client = OpenAI()
+    config = (json
+              .loads(args.config.read_text())
+              .get('openai'))
     if args.max_age_hours is None:
         acheck = NoAgeCheck()
     else:
         acheck = HourAgeCheck(args.max_age_hours)
+    name = config['assistant_name']
+    client = OpenAI(api_key=config['api_key'])
 
-    while True:
-        assistants = client.beta.assistants.list()
-        for a in assistants:
-            if a.created_at in acheck:
-                continue
-            if a.tool_resources.file_search is not None:
-                for i in a.tool_resources.file_search.vector_store_ids:
-                    Logger.warning(f'{a.id} {i}')
-                    vsm = VectorStoreManager(i)
-                    vsm.cleanup()
-            client.beta.assistants.delete(a.id)
-
-        if not assistants.has_more:
-            break
+    for a in assistants(client, acheck, name):
+        if a.tool_resources.file_search is not None:
+            for i in a.tool_resources.file_search.vector_store_ids:
+                Logger.info(f'{a.id} {i}')
+                vsm = VectorStoreManager(i)
+                vsm.cleanup()
+        client.beta.assistants.delete(a.id)
