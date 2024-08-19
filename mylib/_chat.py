@@ -23,8 +23,9 @@ class ChatController:
         'max_completion_tokens': 2 ** 12,
     }
 
-    def __init__(self, client, gpt, chat):
+    def __init__(self, client, database, gpt, chat):
         self.client = client
+        self.database = database
         self.gpt = gpt
         self.chat = chat
 
@@ -44,14 +45,14 @@ class ChatController:
         self.thread = self.client.beta.threads.create()
         self.attached = False
 
-    def __call__(self, prompt, database):
+    def __call__(self, prompt):
         if not self.attached:
             self.client.beta.assistants.update(
                 assistant_id=self.assistant.id,
                 tool_resources={
                     'file_search': {
                         'vector_store_ids': [
-                            database.vector_store_id,
+                            self.database.vector_store_id,
                         ],
                     },
                 },
