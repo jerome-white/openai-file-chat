@@ -1,5 +1,5 @@
 from ._chat import ChatController
-from ._files import FileManager
+from ._files import FileManager, VectorStoreManager
 from ._errors import ErrorLogger
 from ._logging import Logger
 from ._message import MessageHandler

@@ -50,39 +50,44 @@ class FileStream:
             s.close()
         self.streams.clear()
 
-class FileManager:
-    def __init__(self, client, prefix, batch_size=20):
+class VectorStoreManager:
+    def __init__(self, client, vector_store_id):
         self.client = client
+        self.vector_store_id = vector_store_id
+
+    def __iter__(self):
+        while True:
+            vs_files = self.client.beta.vector_stores.files.list(
+                vector_store_id=self.vector_store_id,
+                **kwargs,
+            )
+            for f in vs_files.data:
+                yield f.id
+
+            if not vs_files.has_more:
+                break
+
+    def cleanup(self):
+        for i in self:
+            self.client.files.delete(i)
+        self.client.beta.vector_stores.delete(self.vector_store_id)
+
+class FileManager(VectorStoreManager):
+    def __init__(self, client, prefix, batch_size=20):
+        super().__init__(client, None)
+
         self.prefix = prefix
         self.batch_size = batch_size
-
         self.storage = set()
-        self.vector_store_id = None
 
     def __bool__(self):
         return self.vector_store_id is not None
-
-    def __iter__(self):
-        if self:
-            kwargs = {}
-            while True:
-                vs_files = self.client.beta.vector_stores.files.list(
-                    vector_store_id=self.vector_store_id,
-                    **kwargs,
-                )
-                for f in vs_files.data:
-                    result = self.client.files.retrieve(f.id)
-                    yield result.filename
-
-                if not vs_files.has_more:
-                    break
-                kwargs['after'] = vs_files.after
 
     def __call__(self, paths):
         files = []
         self.test_and_setup()
 
-        for p in self.ls(paths):
+        for p in self.each(paths):
             with FileStream(p) as stream:
                 for s in stream:
                     if s.checksum not in self.storage:
@@ -92,7 +97,19 @@ class FileManager:
                     self.put(files)
                     files.clear()
 
-        return '\n'.join(self)
+        return '\n'.join(self.ls())
+
+    def ls(self):
+        for i in self:
+            self.client.files.retrieve(i)
+            yield i.filename
+
+    def cleanup(self):
+        if self.storage:
+            assert self.vector_store_id is not None
+            super().cleanup()
+            self.storage.clear()
+        self.vector_store_id = None
 
     def test_and_setup(self):
         if self:
@@ -105,7 +122,7 @@ class FileManager:
             )
             self.vector_store_id = vector_store.id
 
-    def ls(self, paths):
+    def each(self, paths):
         left = 0
         while left < len(paths):
             right = left + self.batch_size

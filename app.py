@@ -34,6 +34,10 @@ def load():
 
     return ChatState(database, messenger, chat)
 
+def eject(state):
+    state.database.cleanup()
+    stat.chat.cleanup()
+
 def upload(data, state):
     return state.database(data)
 
@@ -53,7 +57,10 @@ def prompt(message, history, state):
 #
 #
 with gr.Blocks() as demo:
-    state = gr.State(load)
+    state = gr.State(
+        value=load,
+        delete_callback=eject,
+    )
     with gr.Row():
         with gr.Column():
             repository = gr.Textbox(
@@ -67,7 +74,10 @@ with gr.Blocks() as demo:
             )
             data.upload(
                 fn=upload,
-                inputs=[data, state],
+                inputs=[
+                    data,
+                    state,
+                ],
                 outputs=repository,
             )
 
@@ -76,7 +86,11 @@ with gr.Blocks() as demo:
             interaction = gr.Textbox()
             interaction.submit(
                 fn=prompt,
-                inputs=[interaction, chatbot, state],
+                inputs=[
+                    interaction,
+                    chatbot,
+                    state,
+                ],
                 outputs=chatbot,
             )
 

@@ -61,6 +61,11 @@ class ChatController:
 
         return self.send(prompt)
 
+    def cleanup(self):
+        self.client.beta.threads.delete(self.thread.id)
+        self.client.beta.assistants.delete(self.assistant.id)
+        self.attached = False
+
     def send(self, content):
         self.client.beta.threads.messages.create(
             self.thread.id,
