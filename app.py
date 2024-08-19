@@ -1,6 +1,7 @@
 import os
 import json
-from tempfile import NamedTemporaryFile
+import collections as cl
+from dataclasses import dataclass
 
 import gradio as gr
 from openai import OpenAI
@@ -16,75 +17,68 @@ from mylib import (
 #
 #
 #
-class ErrorLogger:
-    def __init__(self, path):
-        self.path = path
-        if not self.path.exists():
-            self.path.mkdir(parents=True, exist_ok=True)
-
-    def dump(self, prompt, error):
-        msg = {
-            'prompt': prompt,
-        }
-        msg.update(error.to_dict())
-        output = json.dumps(msg, indent=2)
-
-        with NamedTemporaryFile(mode='w',
-                                prefix='',
-                                dir=self.path,
-                                delete=False) as fp:
-            print(output, file=fp)
-            return fp.name
+ChatState = cl.namedtuple('ChatState', 'database, messenger, chat')
 
 #
 #
 #
-class FileChat:
-    def __init__(self, client, config):
-        self.database = FileManager(client, config['chat']['prefix'])
-        self.messenger = MessageHandler(client, NumericCitations)
-        self.chat = ChatController(client, config['openai'], config['chat'])
+def load():
+    with open(os.getenv('FILE_CHAT_CONFIG')) as fp:
+        config = json.load(fp)
+    (_openai, _chat) = map(config.get, ('openai', 'chat'))
+    client = OpenAI(api_key=_openai['api_key'])
 
-    def upload(self, *args):
-        (data, ) = args
-        return self.database(data)
+    database = FileManager(client, _chat['prefix'])
+    messenger = MessageHandler(client, NumericCitations)
+    chat = ChatController(client, database, _openai, _chat)
 
-    def prompt(self, *args):
-        (message, *_) = args
-        if not self.database:
-            raise gr.Error('Please upload your documents to begin')
+    return ChatState(database, messenger, chat)
 
-        return self.messenger(self.chat(message, self.database))
+def upload(data, state):
+    return state.database(data)
+
+def prompt(message, history, state):
+    if not state.database:
+        raise gr.Error('Please upload your documents to begin')
+
+    response = state.messenger(state.chat(message))
+    history.append((
+        message,
+        response,
+    ))
+
+    return history
 
 #
 #
 #
-with open(os.getenv('FILE_CHAT_CONFIG')) as fp:
-    config = json.load(fp)
-
 with gr.Blocks() as demo:
-    client = OpenAI(api_key=config['openai']['api_key'])
-    mychat = FileChat(client, config)
-
+    state = gr.State(load)
     with gr.Row():
-        upload = gr.UploadButton(file_count='multiple')
-        text = gr.Textbox(label='Files uploaded', interactive=False)
-        upload.upload(mychat.upload, upload, text)
+        with gr.Column():
+            repository = gr.Textbox(
+                label='Files uploaded',
+                placeholder='Upload your files to begin!',
+                interactive=False,
+            )
+            data = gr.UploadButton(
+                label='Select and upload your files',
+                file_count='multiple',
+            )
+            data.upload(
+                fn=upload,
+                inputs=[data, state],
+                outputs=repository,
+            )
 
-    gr.ChatInterface(
-        fn=mychat.prompt,
-        additional_inputs=[
-            upload,
-            text,
-        ],
-        retry_btn=None,
-        undo_btn=None,
-        clear_btn=None,
-        # additional_inputs_accordion=gr.Accordion(
-        #     label='Upload documents',
-        #     open=True,
-        # ),
-    )
+        with gr.Column(scale=2):
+            chatbot = gr.Chatbot(height='80vh')
+            interaction = gr.Textbox()
+            interaction.submit(
+                fn=prompt,
+                inputs=[interaction, chatbot, state],
+                outputs=chatbot,
+            )
 
 if __name__ == '__main__':
     # demo.queue().launch(server_name='0.0.0.0', **config['gradio'])
