@@ -100,8 +100,8 @@ class FileManager(VectorStoreManager):
 
     def ls(self):
         for i in self:
-            self.client.files.retrieve(i)
-            yield i.filename
+            entry = self.client.files.retrieve(i)
+            yield entry.filename
 
     def cleanup(self):
         if self.storage:
