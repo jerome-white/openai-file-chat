@@ -1,5 +1,6 @@
 import os
 import json
+import functools as ft
 import collections as cl
 from pathlib import Path
 
@@ -18,12 +19,16 @@ from mylib import (
 #
 ChatState = cl.namedtuple('ChatState', 'database, messenger, chat')
 
+@ft.cache
+def scancfg():
+    with open(os.getenv('FILE_CHAT_CONFIG')) as fp:
+        return json.load(fp)
+
 #
 #
 #
 def load():
-    with open(os.getenv('FILE_CHAT_CONFIG')) as fp:
-        config = json.load(fp)
+    config = scancfg()
     (_openai, _chat) = map(config.get, ('openai', 'chat'))
     client = OpenAI(api_key=_openai['api_key'])
 
@@ -105,5 +110,5 @@ with gr.Blocks() as demo:
             )
 
 if __name__ == '__main__':
-    # demo.queue().launch(server_name='0.0.0.0', **config['gradio'])
-    demo.queue().launch(server_name='0.0.0.0')
+    kwargs = scancfg().get('gradio')
+    demo.queue().launch(server_name='0.0.0.0', **kwargs)
