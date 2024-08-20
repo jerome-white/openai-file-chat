@@ -1,13 +1,11 @@
 import os
 import json
 import collections as cl
-from dataclasses import dataclass
 
 import gradio as gr
 from openai import OpenAI
 
 from mylib import (
-    Logger,
     FileManager,
     ChatController,
     MessageHandler,
@@ -36,7 +34,7 @@ def load():
 
 def eject(state):
     state.database.cleanup()
-    stat.chat.cleanup()
+    state.chat.cleanup()
 
 def upload(data, state):
     return state.database(data)
