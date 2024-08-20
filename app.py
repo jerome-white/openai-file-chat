@@ -1,6 +1,7 @@
 import os
 import json
 import collections as cl
+from pathlib import Path
 
 import gradio as gr
 from openai import OpenAI
@@ -59,7 +60,13 @@ with gr.Blocks() as demo:
         value=load,
         delete_callback=eject,
     )
+    howto = Path('static/howto').with_suffix('.md')
+
     with gr.Row():
+        with gr.Accordion(label='Instructions', open=False):
+            gr.Markdown(howto.read_text())
+    with gr.Row():
+
         with gr.Column():
             data = gr.UploadButton(
                 label='Select and upload your files',
