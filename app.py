@@ -55,7 +55,10 @@ def prompt(message, history, state):
         response,
     ))
 
-    return history
+    return (     # textbox submit outputs
+        '',      # clear the input text
+        history, # update the chat output
+    )
 
 #
 #
@@ -106,7 +109,10 @@ with gr.Blocks() as demo:
                     chatbot,
                     state,
                 ],
-                outputs=chatbot,
+                outputs=[
+                    interaction,
+                    chatbot,
+                ],
             )
 
 if __name__ == '__main__':
