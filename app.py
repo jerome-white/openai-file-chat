@@ -87,7 +87,10 @@ with gr.Blocks() as demo:
             )
 
         with gr.Column(scale=2):
-            chatbot = gr.Chatbot(height='80vh')
+            chatbot = gr.Chatbot(
+                height='70vh',
+                show_copy_button=True,
+            )
             interaction = gr.Textbox(
                 label='Ask a question about your documents and press "Enter"',
             )
