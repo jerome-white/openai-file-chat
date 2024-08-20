@@ -61,14 +61,14 @@ with gr.Blocks() as demo:
     )
     with gr.Row():
         with gr.Column():
+            data = gr.UploadButton(
+                label='Select and upload your files',
+                file_count='multiple',
+            )
             repository = gr.Textbox(
                 label='Files uploaded',
                 placeholder='Upload your files to begin!',
                 interactive=False,
-            )
-            data = gr.UploadButton(
-                label='Select and upload your files',
-                file_count='multiple',
             )
             data.upload(
                 fn=upload,
