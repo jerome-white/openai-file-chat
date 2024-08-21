@@ -4,7 +4,7 @@ from pathlib import Path
 from argparse import ArgumentParser
 
 from scipy import constants
-from openai import OpenAI
+from openai import OpenAI, NotFoundError
 
 from mylib import Logger, VectorStoreManager
 
@@ -67,4 +67,7 @@ if __name__ == '__main__':
         remove.append(a.id)
 
     for a in remove:
-        client.beta.assistants.delete(a)
+        try:
+            client.beta.assistants.delete(a)
+        except NotFoundError:
+            Logger.error(a)
