@@ -56,9 +56,10 @@ if __name__ == '__main__':
 
     remove = []
     for a in assistants(client, acheck, name):
+        Logger.critical(a.id)
         if a.tool_resources.file_search is not None:
             for i in a.tool_resources.file_search.vector_store_ids:
-                Logger.info(f'{a.id} {i}')
+                Logger.warning(f'{a.id} {i}')
                 vsm = VectorStoreManager(client, i)
                 vsm.cleanup()
         remove.append(a.id)
