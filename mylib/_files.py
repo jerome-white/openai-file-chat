@@ -67,7 +67,7 @@ class VectorStoreManager:
 
             if not vs_files.has_more:
                 break
-            kwargs['after'] = vs_files.after
+            kwargs['after'] = vs_files.last_id
 
     def cleanup(self):
         files = list(self)
