@@ -56,15 +56,18 @@ class VectorStoreManager:
         self.vector_store_id = vector_store_id
 
     def __iter__(self):
+        kwargs = {}
         while True:
             vs_files = self.client.beta.vector_stores.files.list(
                 vector_store_id=self.vector_store_id,
+                **kwargs,
             )
             for f in vs_files.data:
                 yield f.id
 
             if not vs_files.has_more:
                 break
+            kwargs['after'] = vs_files.after
 
     def cleanup(self):
         for i in self:
