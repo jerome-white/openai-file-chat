@@ -29,14 +29,16 @@ class HourAgeCheck(AgeCheck):
         return age < self.limit
 
 def assistants(client, age_limit, name):
+    kwargs = {}
     while True:
-        page = client.beta.assistants.list()
+        page = client.beta.assistants.list(**kwargs)
         for a in page:
             if a.name == name and a.created_at not in age_limit:
                 yield a
 
         if not page.has_more:
             break
+        kwargs['after'] = page.last_id
 
 if __name__ == '__main__':
     arguments = ArgumentParser()
