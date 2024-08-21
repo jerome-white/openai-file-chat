@@ -70,8 +70,9 @@ class VectorStoreManager:
             kwargs['after'] = vs_files.after
 
     def cleanup(self):
-        for i in self:
-            self.client.files.delete(i)
+        files = list(self)
+        for f in files:
+            self.client.files.delete(f)
         self.client.beta.vector_stores.delete(self.vector_store_id)
 
 class FileManager(VectorStoreManager):
