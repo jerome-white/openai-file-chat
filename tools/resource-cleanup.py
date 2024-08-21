@@ -25,7 +25,7 @@ class HourAgeCheck(AgeCheck):
         self.limit = hours
 
     def __contains__(self, other):
-        age = (other - self.now) * constants.hour
+        age = (self.now - other) / constants.hour
         return age < self.limit
 
 def assistants(client, age_limit, name):
