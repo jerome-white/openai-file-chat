@@ -46,14 +46,14 @@ def upload(data, state):
     return state.database(data)
 
 def prompt(message, history, state):
-    if not state.database:
-        raise gr.Error('Please upload your documents to begin')
-
-    response = state.messenger(state.chat(message))
-    history.append((
-        message,
-        response,
-    ))
+    if state.database:
+        response = state.messenger(state.chat(message))
+        history.append((
+            message,
+            response,
+        ))
+    else:
+        gr.Warning('Please upload your documents to begin')
 
     return (     # textbox submit outputs
         '',      # clear the input text
