@@ -84,7 +84,7 @@ class FileManager(VectorStoreManager):
         self.storage = set()
 
     def __bool__(self):
-        return self.vector_store_id is not None
+        return bool(self.storage)
 
     def __call__(self, paths):
         files = []
