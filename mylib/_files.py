@@ -5,6 +5,10 @@ import itertools as it
 import functools as ft
 from pathlib import Path
 
+from openai import BadRequestError
+
+# from ._logging import Logger
+
 class FileObject:
     _window = 20
 
@@ -94,8 +98,7 @@ class FileManager(VectorStoreManager):
             with FileStream(p) as stream:
                 for s in stream:
                     if s.checksum not in self.storage:
-                        files.append(s.fp)
-                        self.storage.add(s.checksum)
+                        files.append(s)
                 if files:
                     self.put(files)
                     files.clear()
@@ -132,11 +135,17 @@ class FileManager(VectorStoreManager):
             yield list(map(Path, it.islice(paths, left, right)))
             left = right
 
-    def put(self, files):
-        batch = self.client.beta.vector_stores.file_batches.upload_and_poll(
-            vector_store_id=self.vector_store_id,
-            files=files,
-        )
-        if batch.file_counts.completed != len(files):
-            err = f'Error uploading documents: {batch.file_counts}'
+    def put(self, fobjs):
+        files = [ x.fp for x in fobjs ]
+        try:
+            bat = self.client.beta.vector_stores.file_batches.upload_and_poll(
+                vector_store_id=self.vector_store_id,
+                files=files,
+            )
+        except BadRequestError as err:
+            raise InterruptedError(err.body['message']) from err
+        if bat.file_counts.completed != len(files):
+            err = f'Error uploading documents: {bat.file_counts}'
             raise InterruptedError(err)
+
+        self.storage.update(x.checksum for x in fobjs)

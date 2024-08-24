@@ -43,7 +43,10 @@ def eject(state):
     state.chat.cleanup()
 
 def upload(data, state):
-    return state.database(data)
+    try:
+        return state.database(data)
+    except InterruptedError as err:
+        raise gr.Error(str(err))
 
 def prompt(message, history, state):
     if state.database:
@@ -97,9 +100,9 @@ with gr.Blocks() as demo:
         with gr.Column(scale=2):
             chatbot = gr.Chatbot(
                 height='70vh',
-                scroll_to_output=True,
                 show_copy_button=True,
             )
+            chatbot.change(scroll_to_output=True)
             interaction = gr.Textbox(
                 label='Ask a question about your documents and press "Enter"',
             )
