@@ -1,20 +1,84 @@
-class CitationManager:
-    def __init__(self, annotations, client, start=1):
-        self.start = start
-        self.body = {}
-        self.citations = []
+import collections as cl
+from dataclasses import dataclass
 
+#
+#
+#
+@dataclass
+class Citation:
+    text: str
+    refn: str
+    cite: str
+
+def unique(values):
+    seen = set()
+    for v in values:
+        if v not in seen:
+            yield v
+            seen.add(v)
+
+#
+#
+#
+class CitationParser:
+    def __init__(self, client, start=1):
+        self.client = client
+        self.start = start
+
+    def __next__(self):
+        value = f'[{self.start}]'
+        self.start += 1
+        return value
+
+    def __call__(self, annotations):
         for a in annotations:
-            reference = f'[{start}]'
-            self.body[a.text] = reference
-            document = client.files.retrieve(a.file_citation.file_id)
-            self.citations.append('{} {}:{}--{}'.format(
-                reference,
-                document.filename,
-                a.start_index,
-                a.end_index,
-            ))
-            start += 1
+            document = self.client.files.retrieve(a.file_citation.file_id)
+            yield Citation(a.text, *self.extract(a, document.filename))
+
+class StandardCitationParser(CitationParser):
+    def extract(self, annotation, document):
+        reference = next(self)
+        citation = '{} {}:{}--{}'.format(
+            reference,
+            document,
+            annotation.start_index,
+            annotation.end_index,
+        )
+
+        return (reference, citation)
+
+class SimpleCitationParser(CitationParser):
+    def __init__(self, client, start=1):
+        super().__init__(client, start)
+        self.citations = {}
+
+    def extract(self, annotation, document):
+        if document in self.citations:
+            reference = self.citations[document]
+        else:
+            reference = next(self)
+            self.citations[document] = reference
+        citation = f'{reference} {document}'
+
+        return (reference, citation)
+
+#
+#
+#
+class CitationManager:
+    # _c_parser = StandardCitationParser
+    _c_parser = SimpleCitationParser
+
+    def __init__(self, annotations, client, start):
+        self.body = {}
+
+        c_parser = self._c_parser(client, start)
+        citations = []
+        for c in c_parser(annotations):
+            self.body[c.text] = c.refn
+            citations.append(c.cite)
+
+        self.citations = list(unique(citations))
 
     def __len__(self):
         return len(self.citations)
