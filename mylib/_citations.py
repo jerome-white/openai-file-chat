@@ -35,6 +35,9 @@ class CitationParser:
             document = self.client.files.retrieve(a.file_citation.file_id)
             yield Citation(a.text, *self.extract(a, document.filename))
 
+    def extract(self, annotation, document):
+        raise NotImplementedError()
+
 class StandardCitationParser(CitationParser):
     def extract(self, annotation, document):
         reference = next(self)
