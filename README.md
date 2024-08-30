@@ -32,18 +32,17 @@ Generate a configuration JSON. The structure is as follows:
 
 ```json
 {
-  "gradio": {
-	# key-value pairs passed to Gradio.Blocks.launch
+  "gradio": {         dict # key-value pairs passed to Gradio.Blocks.launch
   },
   "openai": {
-    "api_key": str         # your OpenAI API key
-    "model": str           # OpenAI model to use
+    "api_key":        str  # your OpenAI API key
+    "model":          str  # OpenAI model to use
     "assistant_name": str  # Naming convention to give assistants
   },
   "chat": {
-    "prefix": str          # Vector store name prefix
-    "system_prompt": str   # Path to system prompt (static/system-prompt.txt)
-    "retries": int         # Number of prompt retry attempts
+    "prefix":         str  # Vector store name prefix
+    "system_prompt":  str  # Path to system prompt (static/system-prompt.txt)
+    "retries":        int  # Number of prompt retry attempts
   }
 }
 ```
